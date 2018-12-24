@@ -13,9 +13,6 @@ More information of HMAC [here](https://en.wikipedia.org/wiki/HMAC).
 
 Some API's use the HMAC-SHA1 as Authentication, like Amazon or Twitter.
 
-Fact: I created this package because we use this Authentication at the company I
-currently work for.
-
 ```elm
 import HmacSha1
 
