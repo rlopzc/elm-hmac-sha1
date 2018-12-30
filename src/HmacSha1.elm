@@ -27,7 +27,7 @@ import Word.Bytes as Bytes
 {-| A HMAC-SHA1 digest.
 -}
 type Digest
-    = Digest Bytes
+    = Digest (List Int)
 
 
 {-| Pass a Key and a Message to compute a Digest
@@ -52,7 +52,6 @@ digest key message =
             messageToBytes message
     in
     hmac normalizedKey messageBytes
-        |> listToBytes
         |> Digest
 
 
@@ -61,12 +60,12 @@ You can use this to map it to your own representations. I use it to convert it t
 Base16 and Base64 string representations.
 
     toBytes (digest "key" "message")
-    --> Ok (<80 bytes>)
+    --> <80 bytes>
 
 -}
-toBytes : Digest -> Result String Bytes
-toBytes (Digest bytes) =
-    Ok bytes
+toBytes : Digest -> Bytes
+toBytes (Digest data) =
+    listToBytes data
 
 
 {-| Convert a Digest into a List of Integers. Sometimes you will want to have the
@@ -74,13 +73,12 @@ Byte representation as a list of integers.
 
     toIntList (digest "key" "message")
         |> toIntList
-    --> Ok [32,136,223,116,213,242,20,107,72,20,108,175,73,101,55,126,157,11,227,164]
+    --> [32,136,223,116,213,242,20,107,72,20,108,175,73,101,55,126,157,11,227,164]
 
 -}
-toIntList : Digest -> Result String (List Int)
-toIntList (Digest bytes) =
-    bytesToMaybeList bytes
-        |> Result.fromMaybe "error converting Digest"
+toIntList : Digest -> List Int
+toIntList (Digest data) =
+    data
 
 
 {-| Convert a Digest into a base64 String Result
@@ -96,10 +94,8 @@ toIntList (Digest bytes) =
 
 -}
 toBase64 : Digest -> Result String String
-toBase64 (Digest bytes) =
-    bytesToMaybeList bytes
-        |> Maybe.map Base64.encode
-        |> Maybe.withDefault (Err "error converting Digest")
+toBase64 (Digest data) =
+    Base64.encode data
 
 
 {-| Convert a Digest into a base16 String Result
@@ -115,10 +111,8 @@ toBase64 (Digest bytes) =
 
 -}
 toHex : Digest -> Result String String
-toHex (Digest bytes) =
-    bytesToMaybeList bytes
-        |> Maybe.map Base16.encode
-        |> Maybe.withDefault (Err "error converting Digest")
+toHex (Digest data) =
+    Base16.encode data
 
 
 
