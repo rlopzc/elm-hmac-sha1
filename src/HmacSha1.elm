@@ -18,7 +18,6 @@ import Base16
 import Base64
 import Bitwise
 import Bytes exposing (Bytes)
-import Bytes.Decode as Decode exposing (Decoder)
 import Bytes.Encode as Encode exposing (Encoder)
 import SHA1
 import Word.Bytes as Bytes
@@ -186,11 +185,6 @@ messageToBytes message =
 -- SHA 1
 
 
-byteSize : Int
-byteSize =
-    20
-
-
 blockSize : Int
 blockSize =
     64
@@ -217,32 +211,3 @@ listToBytes byteList =
 intEncoder : Int -> Encode.Encoder
 intEncoder int =
     Encode.unsignedInt32 Bytes.BE int
-
-
-
--- DECODE
-
-
-bytesToMaybeList : Bytes -> Maybe (List Int)
-bytesToMaybeList bytes =
-    Decode.decode listDecoder bytes
-        -- Reverse the List because we Decode from Left to Right
-        |> Maybe.map List.reverse
-
-
-{-| The SHA-1 produces 160-bit (20-byte) hash value. That is the reason why we use
-20 as the times we loop and decode the Byte sequence
--}
-listDecoder : Decoder (List Int)
-listDecoder =
-    Decode.loop ( byteSize, [] )
-        (listStep (Decode.unsignedInt32 Bytes.BE))
-
-
-listStep : Decoder a -> ( Int, List a ) -> Decoder (Decode.Step ( Int, List a ) (List a))
-listStep decoder ( n, xs ) =
-    if n <= 0 then
-        Decode.succeed (Decode.Done xs)
-
-    else
-        Decode.map (\x -> Decode.Loop ( n - 1, x :: xs )) decoder
