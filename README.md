@@ -35,7 +35,7 @@ canonicalString =
 
 HmacSha1.digest "verify-secret" canonicalString
     |> HmacSha1.toBase64
---> Ok "nLet/JEZG9CRXHScwaQ/na4vsKQ="
+--> "nLet/JEZG9CRXHScwaQ/na4vsKQ="
 ```
 
 ## Notes

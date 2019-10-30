@@ -14,23 +14,23 @@ suite =
                 \_ ->
                     digest "" ""
                         |> toBase64
-                        |> Expect.equal (Ok "+9sdGxiqbAgyS31ktx+3Y3BpDh0=")
+                        |> Expect.equal "+9sdGxiqbAgyS31ktx+3Y3BpDh0="
             , test "key: key, message: message" <|
                 \_ ->
                     digest "key" "message"
                         |> toBase64
-                        |> Expect.equal (Ok "IIjfdNXyFGtIFGyvSWU3fp0L46Q=")
+                        |> Expect.equal "IIjfdNXyFGtIFGyvSWU3fp0L46Q="
             ]
         , describe "HmacSha1.toHex"
             [ test "empty key and message" <|
                 \_ ->
                     digest "" ""
                         |> toHex
-                        |> Expect.equal (Ok "FBDB1D1B18AA6C08324B7D64B71FB76370690E1D")
+                        |> Expect.equal "fbdb1d1b18aa6c08324b7d64b71fb76370690e1d"
             , test "key: key, message: message" <|
                 \_ ->
                     digest "key" "message"
                         |> toHex
-                        |> Expect.equal (Ok "2088DF74D5F2146B48146CAF4965377E9D0BE3A4")
+                        |> Expect.equal "2088df74d5f2146b48146caf4965377e9d0be3a4"
             ]
         ]

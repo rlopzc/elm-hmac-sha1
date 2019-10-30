@@ -35,11 +35,11 @@ type Key
 
     digest "key" "The quick brown fox jumps over the lazy dog"
         |> toHex
-    --> Ok "DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9"
+    --> "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
 
     digest "key" "The quick brown fox jumps over the lazy dog"
         |> toBase64
-    --> Ok "3nybhbi3iqa8ino29wqQcBydtNk="
+    --> "3nybhbi3iqa8ino29wqQcBydtNk="
 
 -}
 digest : String -> String -> Digest
@@ -76,26 +76,26 @@ toIntList (Digest data) =
     SHA1.toByteValues data
 
 
-{-| Convert a Digest into a base64 String Result
+{-| Convert a Digest into a base64 String
 
     toBase64 (digest "key" "message")
-    --> Ok "IIjfdNXyFGtIFGyvSWU3fp0L46Q="
+    --> "IIjfdNXyFGtIFGyvSWU3fp0L46Q="
 
 -}
-toBase64 : Digest -> Result String String
+toBase64 : Digest -> String
 toBase64 (Digest data) =
-    Ok (SHA1.toBase64 data)
+    SHA1.toBase64 data
 
 
-{-| Convert a Digest into a base16 String Result
+{-| Convert a Digest into a base16 String
 
     toHex (digest "key" "message")
-    --> Ok "2088DF74D5F2146B48146CAF4965377E9D0BE3A4"
+    --> "2088df74d5f2146b48146caf4965377e9d0be3a4"
 
 -}
-toHex : Digest -> Result String String
+toHex : Digest -> String
 toHex (Digest data) =
-    Ok (String.toUpper (SHA1.toHex data))
+    SHA1.toHex data
 
 
 
