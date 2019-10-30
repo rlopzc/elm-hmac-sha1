@@ -23,7 +23,7 @@ import SHA1
 import Word.Bytes as Bytes
 
 
-{-| A HMAC-SHA1 digest.
+{-| An HMAC-SHA1 digest.
 -}
 type Digest
     = Digest (List Int)
