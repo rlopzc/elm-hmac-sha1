@@ -26,11 +26,15 @@ import HmacSha1
 
 canonicalString : String
 canonicalString =
-  ["application/json", "", "/account", "Wed, 02 Nov 2016 17:26:52 GMT"]
-    |> String.join ","
+    String.join ","
+        [ "application/json"
+        , ""
+        , "/account"
+        , "Wed, 02 Nov 2016 17:26:52 GMT"
+        ]
 
 HmacSha1.digest "verify-secret" canonicalString
-  |> HmacSha1.toBase64
+    |> HmacSha1.toBase64
 --> Ok "nLet/JEZG9CRXHScwaQ/na4vsKQ="
 ```
 

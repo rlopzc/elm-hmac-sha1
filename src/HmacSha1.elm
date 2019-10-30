@@ -58,8 +58,12 @@ digest key message =
 You can use this to map it to your own representations. I use it to convert it to
 Base16 and Base64 string representations.
 
-    toBytes (digest "key" "message")
-    --> <80 bytes>
+    import Bytes
+
+    digest "key" "message"
+        |> toBytes
+        |> Bytes.width
+    --> 20
 
 -}
 toBytes : Digest -> Bytes
@@ -71,8 +75,7 @@ toBytes (Digest data) =
 Byte representation as a list of integers.
 
     toIntList (digest "key" "message")
-        |> toIntList
-    --> [32,136,223,116,213,242,20,107,72,20,108,175,73,101,55,126,157,11,227,164]
+    --> [32, 136, 223, 116, 213, 242, 20, 107, 72, 20, 108, 175, 73, 101, 55, 126, 157, 11, 227, 164]
 
 -}
 toIntList : Digest -> List Int
@@ -82,14 +85,9 @@ toIntList (Digest data) =
 
 {-| Convert a Digest into a base64 String Result
 
-    case toBase64 (digest "key" "message") of
-        Ok base64String ->
-            "Base64 string: " ++ base64String
 
-        Err err ->
-            "Failed to convert the digest"
-
-    --> Base64 string: IIjfdNXyFGtIFGyvSWU3fp0L46Q=
+    toBase64 (digest "key" "message")
+    --> Ok "IIjfdNXyFGtIFGyvSWU3fp0L46Q="
 
 -}
 toBase64 : Digest -> Result String String
@@ -99,14 +97,8 @@ toBase64 (Digest data) =
 
 {-| Convert a Digest into a base16 String Result
 
-    case toHex (digest "key" "message") of
-        Ok base16String ->
-            "Hex string: " ++ base16String
-
-        Err err ->
-            "Failed to convert the digest"
-
-    --> Hex string: 2088DF74D5F2146B48146CAF4965377E9D0BE3A4
+    toHex (digest "key" "message")
+    --> Ok "2088DF74D5F2146B48146CAF4965377E9D0BE3A4"
 
 -}
 toHex : Digest -> Result String String
