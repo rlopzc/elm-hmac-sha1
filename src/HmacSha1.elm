@@ -14,19 +14,17 @@ module HmacSha1 exposing
 
 -}
 
-import Base16
-import Base64
 import Bitwise
-import Bytes exposing (Bytes)
+import Bytes exposing (Bytes, Endianness(..))
+import Bytes.Decode as Decode exposing (Decoder)
 import Bytes.Encode as Encode exposing (Encoder)
 import SHA1
-import Word.Bytes as Bytes
 
 
 {-| An HMAC-SHA1 digest.
 -}
 type Digest
-    = Digest (List Int)
+    = Digest SHA1.Digest
 
 
 {-| Pass a Key and a Message to compute a Digest
@@ -42,16 +40,7 @@ type Digest
 -}
 digest : String -> String -> Digest
 digest key message =
-    let
-        normalizedKey =
-            keyToBytes key
-                |> normalizeKey
-
-        messageBytes =
-            messageToBytes message
-    in
-    hmac normalizedKey messageBytes
-        |> Digest
+    Digest <| hmac (normalizeKey key) (messageToBytes message)
 
 
 {-| Convert a Digest into [elm/bytes](https://package.elm-lang.org/packages/elm/bytes/latest/) Bytes.
@@ -68,7 +57,7 @@ Base16 and Base64 string representations.
 -}
 toBytes : Digest -> Bytes
 toBytes (Digest data) =
-    listToBytes data
+    SHA1.toBytes data
 
 
 {-| Convert a Digest into a List of Integers. Sometimes you will want to have the
@@ -80,11 +69,10 @@ Byte representation as a list of integers.
 -}
 toIntList : Digest -> List Int
 toIntList (Digest data) =
-    data
+    SHA1.toByteValues data
 
 
 {-| Convert a Digest into a base64 String Result
-
 
     toBase64 (digest "key" "message")
     --> Ok "IIjfdNXyFGtIFGyvSWU3fp0L46Q="
@@ -92,7 +80,7 @@ toIntList (Digest data) =
 -}
 toBase64 : Digest -> Result String String
 toBase64 (Digest data) =
-    Base64.encode data
+    Ok (SHA1.toBase64 data)
 
 
 {-| Convert a Digest into a base16 String Result
@@ -103,26 +91,33 @@ toBase64 (Digest data) =
 -}
 toHex : Digest -> Result String String
 toHex (Digest data) =
-    Base16.encode data
+    Ok (String.toUpper (SHA1.toHex data))
 
 
 
 -- HMAC-SHA1
 
 
-hmac : KeyBytes -> MessageBytes -> List Int
+hmac : KeyBytes -> MessageBytes -> SHA1.Digest
 hmac (KeyBytes key) (MessageBytes message) =
     let
         oKeyPad =
-            List.map (Bitwise.xor 0x5C) key
+            List.map (Encode.unsignedInt8 << Bitwise.xor 0x5C) key
 
         iKeyPad =
-            List.map (Bitwise.xor 0x36) key
+            List.map (Encode.unsignedInt8 << Bitwise.xor 0x36) key
     in
-    List.append iKeyPad message
-        |> sha1
-        |> List.append oKeyPad
-        |> sha1
+    [ Encode.sequence iKeyPad, message ]
+        |> Encode.sequence
+        |> Encode.encode
+        |> SHA1.fromBytes
+        |> SHA1.toBytes
+        |> Encode.bytes
+        |> List.singleton
+        |> (::) (Encode.sequence oKeyPad)
+        |> Encode.sequence
+        |> Encode.encode
+        |> SHA1.fromBytes
 
 
 
@@ -133,31 +128,26 @@ type KeyBytes
     = KeyBytes (List Int)
 
 
-keyToBytes : String -> KeyBytes
-keyToBytes key =
-    KeyBytes (Bytes.fromUTF8 key)
+blockSize : Int
+blockSize =
+    64
 
 
-normalizeKey : KeyBytes -> KeyBytes
-normalizeKey (KeyBytes key) =
-    case compare blockSize <| List.length key of
-        EQ ->
-            KeyBytes key
+normalizeKey : String -> KeyBytes
+normalizeKey string =
+    let
+        bytes =
+            Encode.encode (Encode.string string)
 
-        GT ->
-            padEnd key
-                |> KeyBytes
+        ints =
+            if Bytes.width bytes > blockSize then
+                SHA1.fromBytes bytes
+                    |> SHA1.toByteValues
 
-        LT ->
-            sha1 key
-                |> padEnd
-                |> KeyBytes
-
-
-padEnd : List Int -> List Int
-padEnd bytes =
-    List.append bytes <|
-        List.repeat (blockSize - List.length bytes) 0
+            else
+                bytesToInts bytes
+    in
+    KeyBytes (ints ++ List.repeat (blockSize - List.length ints) 0)
 
 
 
@@ -165,41 +155,29 @@ padEnd bytes =
 
 
 type MessageBytes
-    = MessageBytes (List Int)
+    = MessageBytes Encoder
 
 
 messageToBytes : String -> MessageBytes
 messageToBytes message =
-    MessageBytes (Bytes.fromUTF8 message)
+    MessageBytes (Encode.string message)
 
 
 
--- SHA 1
+-- HELPERS
 
 
-blockSize : Int
-blockSize =
-    64
+bytesToInts : Bytes -> List Int
+bytesToInts bytes =
+    let
+        decoder acc width =
+            if width == 0 then
+                Decode.succeed (List.reverse acc)
 
-
-sha1 : List Int -> List Int
-sha1 bytes =
+            else
+                Decode.unsignedInt8
+                    |> Decode.andThen (\int -> decoder (int :: acc) (width - 1))
+    in
     bytes
-        |> SHA1.fromBytes
-        |> SHA1.toBytes
-
-
-
--- elm/bytes
--- ENCODE
-
-
-listToBytes : List Int -> Bytes
-listToBytes byteList =
-    Encode.sequence (List.map intEncoder byteList)
-        |> Encode.encode
-
-
-intEncoder : Int -> Encode.Encoder
-intEncoder int =
-    Encode.unsignedInt32 Bytes.BE int
+        |> Decode.decode (decoder [] (Bytes.width bytes))
+        |> Maybe.withDefault []
