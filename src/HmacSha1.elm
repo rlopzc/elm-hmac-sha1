@@ -27,6 +27,10 @@ type Digest
     = Digest SHA1.Digest
 
 
+type Key
+    = Key (List Int)
+
+
 {-| Pass a Key and a Message to compute a Digest
 
     digest "key" "The quick brown fox jumps over the lazy dog"
@@ -39,8 +43,8 @@ type Digest
 
 -}
 digest : String -> String -> Digest
-digest key message =
-    Digest <| hmac (normalizeKey key) (messageToBytes message)
+digest key =
+    Digest << hmac (makeKey key)
 
 
 {-| Convert a Digest into [elm/bytes](https://package.elm-lang.org/packages/elm/bytes/latest/) Bytes.
@@ -98,8 +102,8 @@ toHex (Digest data) =
 -- HMAC-SHA1
 
 
-hmac : KeyBytes -> MessageBytes -> SHA1.Digest
-hmac (KeyBytes key) (MessageBytes message) =
+hmac : Key -> String -> SHA1.Digest
+hmac (Key key) message =
     let
         oKeyPad =
             List.map (Encode.unsignedInt8 << Bitwise.xor 0x5C) key
@@ -107,7 +111,7 @@ hmac (KeyBytes key) (MessageBytes message) =
         iKeyPad =
             List.map (Encode.unsignedInt8 << Bitwise.xor 0x36) key
     in
-    [ Encode.sequence iKeyPad, message ]
+    [ Encode.sequence iKeyPad, Encode.string message ]
         |> Encode.sequence
         |> Encode.encode
         |> SHA1.fromBytes
@@ -124,17 +128,13 @@ hmac (KeyBytes key) (MessageBytes message) =
 -- KEY
 
 
-type KeyBytes
-    = KeyBytes (List Int)
-
-
 blockSize : Int
 blockSize =
     64
 
 
-normalizeKey : String -> KeyBytes
-normalizeKey string =
+makeKey : String -> Key
+makeKey string =
     let
         bytes =
             Encode.encode (Encode.string string)
@@ -147,20 +147,7 @@ normalizeKey string =
             else
                 bytesToInts bytes
     in
-    KeyBytes (ints ++ List.repeat (blockSize - List.length ints) 0)
-
-
-
--- MESSAGE
-
-
-type MessageBytes
-    = MessageBytes Encoder
-
-
-messageToBytes : String -> MessageBytes
-messageToBytes message =
-    MessageBytes (Encode.string message)
+    Key (ints ++ List.repeat (blockSize - List.length ints) 0)
 
 
 
