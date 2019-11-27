@@ -1,11 +1,11 @@
 module HmacSha1 exposing
-    ( Digest, digest
+    ( Digest, fromString, fromBytes
     , toBytes, toByteValues, toHex, toBase64
     )
 
 {-| Computes a Hash-based Message Authentication Code (HMAC) using the SHA-1 hash function
 
-@docs Digest, digest
+@docs Digest, fromString, fromBytes
 
 
 # Representation
@@ -18,6 +18,7 @@ import Bitwise
 import Bytes exposing (Bytes, Endianness(..))
 import Bytes.Decode as Decode exposing (Decoder)
 import Bytes.Encode as Encode exposing (Encoder)
+import Internals exposing (Key(..), bytesToInts, stringToInts)
 import SHA1
 
 
@@ -27,24 +28,64 @@ type Digest
     = Digest SHA1.Digest
 
 
-type Key
-    = Key (List Int)
+{-| Pass a Key and your message as a String to compute a Digest
 
+    import HmacSha1.Key as Key
 
-{-| Pass a Key and a Message to compute a Digest
-
-    digest "key" "The quick brown fox jumps over the lazy dog"
+    "The quick brown fox jumps over the lazy dog"
+        |> fromString (Key.fromString "key")
         |> toHex
     --> "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
 
-    digest "key" "The quick brown fox jumps over the lazy dog"
+    "The quick brown fox jumps over the lazy dog"
+        |> fromString (Key.fromString "key")
         |> toBase64
     --> "3nybhbi3iqa8ino29wqQcBydtNk="
 
 -}
-digest : String -> String -> Digest
-digest key =
-    Digest << hmac (makeKey key)
+fromString : Key -> String -> Digest
+fromString =
+    usingEncoder Encode.string
+
+
+{-| Pass a Key and your message in Bytes to compute a Digest
+
+    import HmacSha1.Key as Key
+    import Bytes.Encode
+
+    Bytes.Encode.sequence []
+        |> Bytes.Encode.encode
+        |> fromBytes (Key.fromString "")
+        |> toBase64
+    --> "+9sdGxiqbAgyS31ktx+3Y3BpDh0="
+
+-}
+fromBytes : Key -> Bytes -> Digest
+fromBytes =
+    usingEncoder Encode.bytes
+
+
+usingEncoder : (message -> Encoder) -> Key -> message -> Digest
+usingEncoder encoder (Key key) message =
+    let
+        oKeyPad =
+            List.map (Encode.unsignedInt8 << Bitwise.xor 0x5C) key
+
+        iKeyPad =
+            List.map (Encode.unsignedInt8 << Bitwise.xor 0x36) key
+    in
+    [ Encode.sequence iKeyPad, encoder message ]
+        |> Encode.sequence
+        |> Encode.encode
+        |> SHA1.fromBytes
+        |> SHA1.toBytes
+        |> Encode.bytes
+        |> List.singleton
+        |> (::) (Encode.sequence oKeyPad)
+        |> Encode.sequence
+        |> Encode.encode
+        |> SHA1.fromBytes
+        |> Digest
 
 
 {-| Convert a Digest into [elm/bytes](https://package.elm-lang.org/packages/elm/bytes/latest/) Bytes.
@@ -52,8 +93,9 @@ You can use this to map it to your own representations. I use it to convert it t
 Base16 and Base64 string representations.
 
     import Bytes
+    import HmacSha1.Key as Key
 
-    digest "key" "message"
+    fromString (Key.fromString "key") "message"
         |> toBytes
         |> Bytes.width
     --> 20
@@ -82,7 +124,10 @@ toByteValues (Digest data) =
 
 {-| Convert a Digest into a base64 String
 
-    toBase64 (digest "key" "message")
+    import HmacSha1.Key as Key
+
+    fromString (Key.fromString "key") "message"
+        |> toBase64
     --> "IIjfdNXyFGtIFGyvSWU3fp0L46Q="
 
 -}
@@ -93,82 +138,13 @@ toBase64 (Digest data) =
 
 {-| Convert a Digest into a base16 String
 
-    toHex (digest "key" "message")
+    import HmacSha1.Key as Key
+
+    fromString (Key.fromString "key") "message"
+        |> toHex
     --> "2088df74d5f2146b48146caf4965377e9d0be3a4"
 
 -}
 toHex : Digest -> String
 toHex (Digest data) =
     SHA1.toHex data
-
-
-
--- HMAC-SHA1
-
-
-hmac : Key -> String -> SHA1.Digest
-hmac (Key key) message =
-    let
-        oKeyPad =
-            List.map (Encode.unsignedInt8 << Bitwise.xor 0x5C) key
-
-        iKeyPad =
-            List.map (Encode.unsignedInt8 << Bitwise.xor 0x36) key
-    in
-    [ Encode.sequence iKeyPad, Encode.string message ]
-        |> Encode.sequence
-        |> Encode.encode
-        |> SHA1.fromBytes
-        |> SHA1.toBytes
-        |> Encode.bytes
-        |> List.singleton
-        |> (::) (Encode.sequence oKeyPad)
-        |> Encode.sequence
-        |> Encode.encode
-        |> SHA1.fromBytes
-
-
-
--- KEY
-
-
-blockSize : Int
-blockSize =
-    64
-
-
-makeKey : String -> Key
-makeKey string =
-    let
-        bytes =
-            Encode.encode (Encode.string string)
-
-        ints =
-            if Bytes.width bytes > blockSize then
-                SHA1.fromBytes bytes
-                    |> SHA1.toByteValues
-
-            else
-                bytesToInts bytes
-    in
-    Key (ints ++ List.repeat (blockSize - List.length ints) 0)
-
-
-
--- HELPERS
-
-
-bytesToInts : Bytes -> List Int
-bytesToInts bytes =
-    let
-        decoder acc width =
-            if width == 0 then
-                Decode.succeed (List.reverse acc)
-
-            else
-                Decode.unsignedInt8
-                    |> Decode.andThen (\int -> decoder (int :: acc) (width - 1))
-    in
-    bytes
-        |> Decode.decode (decoder [] (Bytes.width bytes))
-        |> Maybe.withDefault []

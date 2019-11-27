@@ -23,6 +23,7 @@ Some API's use the HMAC SHA-1 as Authentication, like Amazon or Twitter.
 
 ```elm
 import HmacSha1
+import HmacSha1.Key as Key exposing (Key)
 
 canonicalString : String
 canonicalString =
@@ -33,7 +34,11 @@ canonicalString =
         , "Wed, 02 Nov 2016 17:26:52 GMT"
         ]
 
-HmacSha1.digest "verify-secret" canonicalString
+appKey : Key
+appKey =
+    Key.fromString "verify-secret"
+
+HmacSha1.fromString appKey canonicalString
     |> HmacSha1.toBase64
 --> "nLet/JEZG9CRXHScwaQ/na4vsKQ="
 ```
