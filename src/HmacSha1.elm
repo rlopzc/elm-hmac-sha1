@@ -1,6 +1,6 @@
 module HmacSha1 exposing
     ( Digest, digest
-    , toBytes, toIntList, toHex, toBase64
+    , toBytes, toByteValues, toHex, toBase64
     )
 
 {-| Computes a Hash-based Message Authentication Code (HMAC) using the SHA-1 hash function
@@ -10,7 +10,7 @@ module HmacSha1 exposing
 
 # Representation
 
-@docs toBytes, toIntList, toHex, toBase64
+@docs toBytes, toByteValues, toHex, toBase64
 
 -}
 
@@ -64,15 +64,19 @@ toBytes (Digest data) =
     SHA1.toBytes data
 
 
-{-| Convert a Digest into a List of Integers. Sometimes you will want to have the
-Byte representation as a list of integers.
+{-| Convert a Digest into a List of Integers. Each Integer is in the range
+0-255, and represents one byte. Can be useful for passing digest on to other
+packages that make use of this convention.
 
-    toIntList (digest "key" "message")
+    import HmacSha1.Key as Key
+
+    fromString (Key.fromString "key") "message"
+        |> toByteValues
     --> [32, 136, 223, 116, 213, 242, 20, 107, 72, 20, 108, 175, 73, 101, 55, 126, 157, 11, 227, 164]
 
 -}
-toIntList : Digest -> List Int
-toIntList (Digest data) =
+toByteValues : Digest -> List Int
+toByteValues (Digest data) =
     SHA1.toByteValues data
 
 
