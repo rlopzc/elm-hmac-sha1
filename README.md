@@ -23,15 +23,24 @@ Some API's use the HMAC SHA-1 as Authentication, like Amazon or Twitter.
 
 ```elm
 import HmacSha1
+import HmacSha1.Key as Key exposing (Key)
 
 canonicalString : String
 canonicalString =
-  ["application/json", "", "/account", "Wed, 02 Nov 2016 17:26:52 GMT"]
-    |> String.join ","
+    String.join ","
+        [ "application/json"
+        , ""
+        , "/account"
+        , "Wed, 02 Nov 2016 17:26:52 GMT"
+        ]
 
-HmacSha1.digest "verify-secret" canonicalString
-  |> HmacSha1.toBase64
---> Ok "nLet/JEZG9CRXHScwaQ/na4vsKQ="
+appKey : Key
+appKey =
+    Key.fromString "verify-secret"
+
+HmacSha1.fromString appKey canonicalString
+    |> HmacSha1.toBase64
+--> "nLet/JEZG9CRXHScwaQ/na4vsKQ="
 ```
 
 ## Notes
@@ -43,3 +52,15 @@ cryptographically strong. Use this package to interoperate with systems that
 already uses HMAC SHA-1 and not for implementing new systems.
 
 There are stronger cryptographic algorithms like HMAC SHA-2, and [this](https://github.com/ktonon/elm-crypto) Elm package implements it.
+
+## Testing
+
+This package uses doc tests, which can be tested using [elm-verify-examples].
+To run all tests (assuming `elm-test` and `elm-verify-examples` are installed):
+
+```bash
+cd elm-hmac-sha1
+elm-verify-examples --fail-on-warn && elm-test
+```
+
+[elm-verify-examples]: https://github.com/stoeffel/elm-verify-examples
