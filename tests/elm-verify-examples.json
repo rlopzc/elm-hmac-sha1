@@ -1,4 +1,4 @@
 {
   "root": "../src",
-  "tests": ["./README.md", "HmacSha1"]
+  "tests": ["./README.md", "HmacSha1", "HmacSha1.Key"]
 }
