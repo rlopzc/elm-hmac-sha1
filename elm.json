@@ -3,7 +3,7 @@
     "name": "romariolopezc/elm-hmac-sha1",
     "summary": "Compute HMAC with SHA-1 hash function",
     "license": "MIT",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "exposed-modules": [
         "HmacSha1",
         "HmacSha1.Key"
