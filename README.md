@@ -9,14 +9,6 @@ This is important as you can represent the data as you want.
 
 More information of HMAC [here](https://en.wikipedia.org/wiki/HMAC).
 
-## IMPORTANT: Incorrect calculation in older versions
-
-Please note that [there was an issue][issue-2] regarding input data
-in versions 2.0.0 and previous of this library. If you are using either of these
-versions, it is highly recommended that you upgrade as soon as possible.
-
-[issue-2]: https://github.com/romariolopezc/elm-hmac-sha1/issues/2
-
 ## Examples
 
 Some API's use the HMAC SHA-1 as Authentication, like Amazon or Twitter.
