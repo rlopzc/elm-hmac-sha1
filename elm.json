@@ -1,6 +1,6 @@
 {
     "type": "package",
-    "name": "romariolopezc/elm-hmac-sha1",
+    "name": "rlopzc/elm-hmac-sha1",
     "summary": "Compute HMAC with SHA-1 hash function",
     "license": "MIT",
     "version": "3.0.1",
